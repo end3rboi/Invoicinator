@@ -1,0 +1,981 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f3f0e8">
+<title>Invoicinator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Arimo:wght@400;700&family=Carlito:wght@400;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&family=Open+Sans:wght@400;700&family=Special+Elite&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f3f0e8; --surface:#fffdf8; --surface-2:#f7f3ea; --ink:#22262e; --muted:#6e6a60; --line:#e1dbcd; --line-2:#cfc7b4;
+  --accent:#8c3b2b; --accent-ink:#fff8f2; --accent-soft:#f4e4dc; --band:#f1f5ec; --warn:#9a6a14;
+  --shadow:0 1px 2px rgba(40,30,10,.05),0 4px 14px rgba(40,30,10,.05);
+  --sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#16181b; --surface:#1f2226; --surface-2:#262a2f; --ink:#e9e6df; --muted:#9b978e; --line:#30353b; --line-2:#3f454c;
+    --accent:#e39a80; --accent-ink:#1b1310; --accent-soft:#3a2722; --band:#232a24; --warn:#e0b45c;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 4px 14px rgba(0,0,0,.25);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#16181b; --surface:#1f2226; --surface-2:#262a2f; --ink:#e9e6df; --muted:#9b978e; --line:#30353b; --line-2:#3f454c;
+  --accent:#e39a80; --accent-ink:#1b1310; --accent-soft:#3a2722; --band:#232a24; --warn:#e0b45c;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 4px 14px rgba(0,0,0,.25);
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:15px/1.45 var(--sans);-webkit-text-size-adjust:100%}
+button,input,select,textarea{font:inherit;color:inherit}
+[hidden]{display:none!important}
+
+/* header */
+.top{position:sticky;top:0;z-index:20;background:var(--bg);border-bottom:1px solid var(--line);padding:calc(12px + env(safe-area-inset-top)) 16px 0}
+.top-in{max-width:1280px;margin:0 auto;display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap}
+.brand{margin-right:auto;padding-bottom:10px}
+.brand h1{margin:0;font:400 22px/1 "Special Elite",var(--mono);letter-spacing:.02em}
+.brand small{display:block;margin-top:4px;font:12px var(--mono);color:var(--muted)}
+.nav{display:flex;gap:2px}
+.nav button{border:1px solid transparent;border-bottom:0;background:none;padding:8px 14px 9px;border-radius:8px 8px 0 0;font:500 13px var(--sans);color:var(--muted);cursor:pointer;display:flex;align-items:center;gap:6px;white-space:nowrap;margin-bottom:-1px}
+.nav button[aria-current="true"]{background:var(--surface);border-color:var(--line);color:var(--ink)}
+.nav .dot{width:6px;height:6px;border-radius:50%;background:var(--accent)}
+@media (max-width:560px){ .nav{width:100%} .nav button{flex:1;justify-content:center;padding:9px 4px 10px} }
+
+/* layout */
+main{max-width:1280px;margin:0 auto;padding:18px 16px 120px;display:grid;grid-template-columns:minmax(0,460px) minmax(0,1fr);gap:28px;align-items:start}
+.editor{display:flex;flex-direction:column;gap:12px;min-width:0}
+.previewpane{position:sticky;top:84px;min-width:0;max-height:calc(100vh - 170px);overflow:auto;border-radius:12px}
+@media (max-width:900px){ main{grid-template-columns:minmax(0,1fr)} .previewpane{display:none} }
+
+
+/* cards & fields */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px 16px;box-shadow:var(--shadow)}
+.card h2{font:600 16px var(--sans);margin:0 0 14px}
+.sub{font:500 11px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:20px 0 10px;padding-top:14px;border-top:1px dashed var(--line-2)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.full{grid-column:1/-1}
+label.f{display:flex;flex-direction:column;gap:5px;font:500 11px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);min-width:0}
+.f input,.f select,.f textarea,.inp{width:100%;min-width:0;border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:9px 10px;font:16px var(--sans);letter-spacing:0;text-transform:none;color:var(--ink);outline:none}
+.f textarea{resize:vertical;min-height:60px}
+.f input:focus,.f select:focus,.f textarea:focus,.inp:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.f input[type=date],.inp[type=date]{min-height:42px}
+.rowlabel{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.chip{border:1px solid var(--line-2);background:none;color:var(--muted);font:500 10.5px var(--mono);letter-spacing:.05em;text-transform:uppercase;padding:1px 7px;border-radius:99px;cursor:pointer}
+.chip.on{border-color:transparent;background:var(--accent-soft);color:var(--accent)}
+.note{font:12.5px var(--mono);color:var(--warn);margin:0 0 12px}
+.link{border:0;background:none;color:var(--accent);font:inherit;cursor:pointer;padding:0;text-decoration:underline;text-underline-offset:2px}
+.btn2{border:1px solid var(--line-2);background:var(--surface);border-radius:8px;padding:8px 12px;cursor:pointer;font:500 13.5px var(--sans);white-space:nowrap}
+.btn2:hover{border-color:var(--accent);color:var(--accent)}
+
+/* dates & pay */
+.mode{display:flex;background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:3px;gap:3px;margin-top:14px}
+.mode button{flex:1;border:0;background:none;border-radius:7px;padding:8px 6px;font:500 13.5px var(--sans);color:var(--muted);cursor:pointer}
+.mode button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:var(--shadow)}
+.money{display:flex;align-items:center;border:1px solid var(--line);background:var(--bg);border-radius:8px;padding-left:9px;min-width:0}
+.money:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.money span{color:var(--muted);font:14px var(--mono);letter-spacing:0;text-transform:none}
+.money input{border:0;background:none;outline:none;padding:9px 8px 9px 4px;width:100%;min-width:0;font:16px var(--mono);color:var(--ink);box-shadow:none!important}
+.f .money input{border:0;padding:9px 8px 9px 4px;background:none;border-radius:0}
+.daylist{margin-top:12px;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.dayhead,.dr{display:grid;grid-template-columns:minmax(0,1fr) 108px 96px;gap:8px;align-items:center;padding:6px 10px}
+.dayhead{font:500 10.5px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);background:var(--surface-2);border-bottom:1px solid var(--line)}
+.dr{border-top:1px solid var(--line)}
+.dayhead+.dr{border-top:0}
+.dr:nth-child(odd){background:var(--band)}
+.dd{font:500 14px var(--mono)}
+.dd small{display:block;font:11.5px var(--sans);color:var(--muted);text-decoration:none}
+.dr .money input{padding:7px 6px 7px 3px;font-size:15px}
+.dr.changed .money:first-of-type{border-color:var(--accent)}
+.dr.off .dd{color:var(--muted)}
+.dr.off .dd small{color:var(--accent)}
+.dr.off .money:last-of-type{opacity:.4}
+.daylist+.help{margin:8px 0 0;font-size:12.5px;color:var(--muted)}
+.del{width:30px;height:30px;border-radius:7px;border:1px solid var(--line-2);background:none;color:var(--muted);cursor:pointer;display:grid;place-items:center;padding:0;flex:none}
+.del:hover{color:var(--accent);border-color:var(--accent)}
+.empty{padding:18px 10px;text-align:center;color:var(--muted);font-size:13.5px}
+.totalline{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-top:16px;padding-top:12px;border-top:1px dashed var(--line-2)}
+.totalline span{font:13px var(--mono);color:var(--muted)}
+.totalline b{font:600 22px var(--mono)}
+.words{font:12.5px var(--sans);color:var(--muted);margin-top:2px;text-align:right}
+.cardhead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px}
+.cardhead h2{margin:0}
+.banner{display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--accent-soft);color:var(--ink);border-radius:12px;padding:10px 12px 10px 14px;font-size:14px}
+
+/* signature */
+.sigprev{height:84px;border:1px dashed var(--line-2);border-radius:8px;background:#fff;display:grid;place-items:center;overflow:hidden}
+.sigprev img{max-height:70px;max-width:85%}
+.sigprev span{color:#9a958a;font:12.5px var(--mono)}
+.sigpad{width:100%;height:150px;border:1px solid var(--line);border-radius:8px;background:#fff;touch-action:none;display:block;margin-top:10px}
+.sigbtns{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+
+/* import */
+.importbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px;margin:-4px 0 16px;border:1px dashed var(--line-2);border-radius:10px;background:var(--surface-2);font-size:14px}
+.importbar .btn2{display:inline-flex;align-items:center}
+.review{border:1px solid var(--line);border-radius:10px;padding:12px;margin:-6px 0 16px;background:var(--bg)}
+.review h3{font:600 14px var(--sans);margin:0 0 8px}
+.rv{display:grid;grid-template-columns:20px 120px minmax(0,1fr);gap:8px;align-items:start;padding:6px 0;border-top:1px solid var(--line);font-size:14px;cursor:pointer}
+.rv:first-of-type{border-top:0}
+.rv input{margin:2px 0 0;accent-color:var(--accent)}
+.rv span{font:500 11px var(--mono);letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding-top:2px}
+.rv em{font-style:normal;overflow-wrap:anywhere}
+.rv img{max-height:46px;max-width:100%;background:#fff;border:1px solid var(--line);border-radius:6px}
+.review .sigbtns .primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+
+/* history */
+.hist{display:flex;flex-direction:column;gap:8px}
+.hitem{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg)}
+.hitem .meta{flex:1;min-width:0}
+.hitem .meta b{display:block;font:500 14px var(--sans);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hitem .meta span{font:12px var(--mono);color:var(--muted)}
+
+/* action bar */
+.actions{position:fixed;left:0;right:0;bottom:0;z-index:30;background:var(--surface);border-top:1px solid var(--line);padding:10px 16px calc(10px + env(safe-area-inset-bottom))}
+.actions-in{max-width:1280px;margin:0 auto;display:flex;gap:10px;align-items:center}
+.sum{margin-right:auto;min-width:0;font:12px var(--mono);color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sum b{display:block;font:600 18px var(--mono);color:var(--ink)}
+.btn{border:1px solid transparent;border-radius:10px;height:44px;padding:0 16px;font:500 14.5px var(--sans);display:inline-flex;align-items:center;justify-content:center;gap:7px;cursor:pointer;white-space:nowrap}
+.btn.primary{background:var(--accent);color:var(--accent-ink);min-width:110px}
+.btn.ghost{background:var(--surface);border-color:var(--line-2);color:var(--ink)}
+.btn:disabled{opacity:.6;cursor:progress}
+.onlymobile{display:none}
+@media (max-width:900px){ .onlymobile{display:inline-flex} }
+@media (max-width:560px){ .sum{display:none} .actions .btn{flex:1;padding:0 8px;min-width:0} }
+
+.toast{position:fixed;left:50%;bottom:84px;transform:translateX(-50%) translateY(16px);background:var(--ink);color:var(--bg);padding:9px 14px;border-radius:8px;font:13px var(--sans);opacity:0;pointer-events:none;transition:all .2s;z-index:60;max-width:calc(100% - 32px);text-align:center}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.act.show{pointer-events:auto}
+.toast button{border:0;background:none;color:var(--accent-soft);font:600 13px var(--sans);text-decoration:underline;text-underline-offset:2px;cursor:pointer;margin-left:8px;padding:0}
+
+/* preview */
+.paperwrap{position:relative;background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:16px;overflow:hidden}
+.paperscale{margin:0 auto}
+.paper{transform-origin:top left;width:794px}
+.page{position:relative;width:794px;height:1123px;background:#fff;overflow:hidden;box-shadow:0 1px 6px rgba(0,0,0,.14)}
+.page+.page{margin-top:16px}
+.page .win{position:absolute;left:0;right:0;overflow:hidden}
+.page .shift{position:absolute;left:0;width:794px}
+.clip{position:absolute;top:4px;left:34px;width:16px;height:42px;z-index:2;opacity:.8}
+.sheet{position:fixed;inset:0;z-index:50;background:var(--bg);display:flex;flex-direction:column}
+.sheet-h{display:flex;align-items:center;gap:10px;padding:calc(10px + env(safe-area-inset-top)) 16px 10px;border-bottom:1px solid var(--line)}
+.sheet-h b{margin-right:auto;font:600 15px var(--sans)}
+.sheet-b{flex:1;overflow:auto;padding:16px 16px 90px}
+
+/* ===== the invoice: a measured copy of the original layout (A4 @ 96dpi) ===== */
+.inv{position:relative;width:794px;min-height:1123px;background:#fff;color:#000;font-family:Calibri,Carlito,sans-serif;font-size:16px;line-height:16px}
+.inv *{box-sizing:border-box}
+.inv .ttl{position:absolute;left:0;width:777px;top:74px;text-align:center;font:700 14.7px/16px Arial,Arimo,sans-serif}
+.inv .bx{position:absolute;left:61px;top:92px;width:659px;border:2px solid #000}
+.inv .r{position:relative;display:flex;border-top:2px solid #000}
+.inv .bx>.r:first-child{border-top:0}
+.inv .c{position:relative;min-width:0}
+.inv .L1{width:290px;flex:none;border-right:2px solid #000}
+.inv .L2{width:486px;flex:none;border-right:2px solid #000}
+.inv .L3{width:343px;flex:none;border-right:2px solid #000}
+.inv .R{flex:1}
+.inv .t{position:absolute;white-space:nowrap}
+.inv b{font-weight:700}
+.inv .lab{left:48px;font-weight:700}
+.inv .mrow{position:relative;border-top:2px solid #000}
+.inv .mrow:first-child{border-top:0}
+.inv a{color:#0563c1;text-decoration:underline}
+.inv table.dt{border-collapse:collapse;font-family:"Segoe UI","Open Sans",sans-serif;font-size:14.7px;line-height:17px}
+.inv table.dt td{border:1px solid #000;padding:0 0 0 3px;height:19px;vertical-align:middle;white-space:nowrap}
+.inv table.dt td:first-child{width:193px}
+.inv table.dt td:last-child{width:261px}
+.inv table.dt tr.b td{font-weight:700}
+.inv table.dt tr:first-child td{height:18px}
+.inv .sigimg{position:absolute;left:44px;top:55px;width:124px;height:50px}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="top-in">
+    <div class="brand"><h1>Invoicinator</h1><small>Invoice maker</small></div>
+    <nav class="nav" aria-label="Sections">
+      <button data-view="invoice" aria-current="true">Invoice</button>
+      <button data-view="profile">My details <span class="dot" id="profileDot" hidden></span></button>
+      <button data-view="history">Past invoices</button>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section class="editor">
+    <div id="view-invoice" style="display:flex;flex-direction:column;gap:12px">
+      <div class="banner" id="setupBanner" hidden><span id="setupText"></span><button type="button" class="btn2" data-goto="profile">Add</button></div>
+
+      <div class="card">
+        <div class="cardhead"><h2>Invoice</h2><button type="button" class="btn2" id="newInvBtn2">New invoice</button></div>
+        <div class="grid">
+          <label class="f">Invoice no.<input data-k="invoiceNo" autocomplete="off" autocapitalize="characters" spellcheck="false"></label>
+          <label class="f">Invoice date<input type="date" data-k="invoiceDate"></label>
+          <label class="f full">Project name<input data-k="showName" autocomplete="off"></label>
+          <label class="f full">Bill to<input data-k="billTo" placeholder="Same as project name" autocomplete="off"></label>
+          <label class="f full">Contact person<input data-k="contactPerson" autocomplete="off"></label>
+          <label class="f">Your role<input data-k="role"></label>
+          <label class="f">Department<input data-k="department"></label>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Dates &amp; pay</h2>
+        <div class="grid">
+          <label class="f">From<input type="date" data-k="startDate"></label>
+          <label class="f">To<input type="date" data-k="endDate"></label>
+          <label class="f full">Day rate<div class="money"><span>₹</span><input data-k="dayRate" inputmode="decimal" placeholder="0"></div></label>
+        </div>
+        <div class="mode" role="group" aria-label="Rates">
+          <button type="button" data-mode="same">Same rate every day</button>
+          <button type="button" data-mode="custom">Edit specific dates</button>
+        </div>
+        <div id="dayList"></div>
+        <div class="totalline"><span id="gdays">0 days</span><b id="gt">₹0</b></div>
+        <div class="words" id="gw"></div>
+      </div>
+
+      <div class="card">
+        <h2>More</h2>
+        <div class="grid">
+          <label class="f"><span class="rowlabel">Month of service <button type="button" class="chip" data-auto="month">Auto</button></span><input data-k="month"></label>
+          <label class="f">Reverse charge
+            <select data-k="reverseCharge"><option value=""></option><option>No</option><option>Yes</option></select>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" id="view-history" hidden>
+      <h2>Past invoices</h2>
+      <div class="hist" id="histList"></div>
+      <div class="sigbtns" style="margin-top:14px"><button type="button" class="btn2" id="newInvBtn">New invoice</button></div>
+    </div>
+
+    <div class="card" id="view-profile" hidden>
+      <div class="importbar">
+        <span>Fill these in from an old invoice</span>
+        <label class="btn2">Choose file<input type="file" id="importFile" accept=".docx,.pdf,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" hidden></label>
+      </div>
+      <div id="importReview" hidden></div>
+      <div class="grid">
+        <label class="f full">Name<input data-k="vendorName" autocomplete="name"></label>
+        <label class="f full">Address<textarea data-k="address" rows="3" autocomplete="street-address"></textarea></label>
+        <label class="f">Email<input type="email" data-k="email" autocomplete="email"></label>
+        <label class="f">Contact no.<input inputmode="tel" data-k="phone" autocomplete="tel"></label>
+      </div>
+      <div class="sub">Tax &amp; bank</div>
+      <div class="grid">
+        <label class="f">PAN<input data-k="pan" autocapitalize="characters"></label>
+        <label class="f">GST reg. no.<input data-k="gstNo" autocapitalize="characters"></label>
+        <label class="f">HSN / SAC code<input data-k="hsn" inputmode="numeric"></label>
+        <label class="f">Place of supply<input data-k="place"></label>
+        <label class="f">IFSC<input data-k="ifsc" autocapitalize="characters"></label>
+        <label class="f">Account no.<input data-k="accNo" inputmode="numeric"></label>
+        <label class="f full">Account holder<input data-k="accName"></label>
+      </div>
+      <div class="sub">Signature</div>
+      <div id="sigBox"></div>
+      <div class="sub">Reset</div>
+      <button type="button" class="btn2" id="resetMe">Clear my details</button>
+    </div>
+  </section>
+
+  <section class="previewpane">
+    <div class="paperwrap"><div class="paperscale"><div class="paper"></div></div></div>
+  </section>
+</main>
+
+<div class="sheet" id="sheet" hidden>
+  <div class="sheet-h"><b>Preview</b><button type="button" class="btn ghost" id="sheetClose" style="height:38px">Close</button></div>
+  <div class="sheet-b"><div class="paperwrap"><div class="paperscale"><div class="paper"></div></div></div></div>
+</div>
+
+<div class="actions"><div class="actions-in">
+  <div class="sum" id="sum"></div>
+  <button class="btn ghost onlymobile" id="pvBtn">Preview</button>
+  <button class="btn ghost" id="dlWord">Word</button>
+  <button class="btn primary" id="dlPdf">PDF</button>
+</div></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<div id="exportHost" style="position:fixed;left:-10000px;top:0"></div>
+<div id="measureHost" style="position:fixed;left:-20000px;top:0;width:794px"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script>
+"use strict";
+/* ===== Build config (filled in by build.py) ===== */
+const CONFIG = /*@CONFIG*/{"prefix": "invg.", "firstInvoiceNo": "1", "fixedSignature": null, "vendor": {"vendorName": "", "address": "", "email": "", "phone": "", "pan": "", "ifsc": "", "accNo": "", "accName": "", "gstNo": "", "hsn": "", "place": "", "department": "", "role": "", "dayRate": ""}}/*@END*/;
+const TEMPLATE_B64 = "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";
+const VENDOR_DEFAULTS = CONFIG.vendor;
+const VENDOR_KEYS = Object.keys(VENDOR_DEFAULTS);
+const CARRY_KEYS = ["department","role","dayRate"];
+const K = name => CONFIG.prefix + name;
+const $ = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+const store = {
+  get(k, fb){ try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : fb; } catch(e){ return fb; } },
+  set(k, v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch(e){} },
+  del(k){ try { localStorage.removeItem(k); } catch(e){} }
+};
+
+/* ===== Dates & numbers ===== */
+const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+const p2 = n => String(n).padStart(2,"0");
+const iso = d => `${d.getFullYear()}-${p2(d.getMonth()+1)}-${p2(d.getDate())}`;
+const todayISO = () => iso(new Date());
+const parseISO = s => { if(!s) return null; const [y,m,d] = s.split("-").map(Number); return y && m && d ? {y,m,d} : null; };
+const toDate = s => { const t = parseISO(s); return t ? new Date(t.y, t.m-1, t.d) : null; };
+const dmyDash = s => { const t = parseISO(s); return t ? `${p2(t.d)}-${p2(t.m)}-${t.y}` : ""; };
+const dmySlashShort = s => { const t = parseISO(s); return t ? `${p2(t.d)}/${p2(t.m)}/${String(t.y).slice(2)}` : ""; };
+const dayLabel = s => { const d = toDate(s); return d ? d.toLocaleDateString("en-IN", { day:"numeric", month:"short" }) : ""; };
+const weekday = s => { const d = toDate(s); return d ? d.toLocaleDateString("en-IN", { weekday:"long" }) : ""; };
+const nice = s => { const d = toDate(s); return d ? d.toLocaleDateString("en-IN", { weekday:"short", day:"numeric", month:"short" }) : ""; };
+const ord = n => { const v = n % 100; if (v>=11 && v<=13) return n+"th"; return n + ({1:"st",2:"nd",3:"rd"}[n%10] || "th"); };
+const num = v => { const n = parseFloat(String(v ?? "").replace(/[^0-9.]/g,"")); return isFinite(n) ? n : 0; };
+const inr = n => n.toLocaleString("en-IN", {maximumFractionDigits:2});
+const plain = n => String(Math.round(n*100)/100);
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+function rupeesInWords(amount){
+  const a = ["","one","two","three","four","five","six","seven","eight","nine","ten","eleven","twelve","thirteen","fourteen","fifteen","sixteen","seventeen","eighteen","nineteen"];
+  const t = ["","","twenty","thirty","forty","fifty","sixty","seventy","eighty","ninety"];
+  const two = n => n < 20 ? a[n] : t[Math.floor(n/10)] + (n%10 ? " " + a[n%10] : "");
+  const three = n => (n >= 100 ? a[Math.floor(n/100)] + " hundred" + (n%100 ? " " : "") : "") + (n%100 ? two(n%100) : "");
+  const words = n => {
+    if (n === 0) return "zero";
+    const parts = [];
+    const crore = Math.floor(n/1e7); n %= 1e7;
+    const lakh = Math.floor(n/1e5); n %= 1e5;
+    const th = Math.floor(n/1e3); n %= 1e3;
+    if (crore) parts.push(words(crore) + " crore");
+    if (lakh) parts.push(two(lakh) + " lakh");
+    if (th) parts.push(two(th) + " thousand");
+    if (n) parts.push(three(n));
+    return parts.join(" ");
+  };
+  const r = Math.floor(amount), p = Math.round((amount - r) * 100);
+  let s = words(r) + " rupees";
+  if (p) s += " and " + two(p) + " paise";
+  s += " only";
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+/* ===== State ===== */
+function freshInvoice(){
+  return { showName: "", billTo: "", contactPerson: "", invoiceNo: CONFIG.firstInvoiceNo, invoiceDate: todayISO(), startDate: "", endDate: "",
+    month: "", monthAuto: true, reverseCharge: "", rateMode: "same", days: [] };
+}
+let S = Object.assign({}, VENDOR_DEFAULTS, freshInvoice(), store.get(K("vendor"), {}), store.get(K("draft"), {}));
+let history = store.get(K("history"), []);
+let view = "invoice";
+function normaliseDays(list, rate){
+  return (Array.isArray(list) ? list : []).map(d => {
+    if (d && "base" in d && !("rate" in d)) return { date: d.date || "", rate: (d.base === "" || num(d.base) === num(rate)) ? "" : String(d.base), extra: d.extra || "", off: false, added: false };
+    return { date: d.date || "", rate: d.rate ?? "", extra: d.extra ?? "", off: !!d.off, added: !!d.added, showExtra: !!d.showExtra };
+  }).filter(d => d.date);
+}
+S.days = normaliseDays(S.days, S.dayRate);
+if (!["same","custom"].includes(S.rateMode)) S.rateMode = S.days.some(d => d.off || num(d.extra) || (d.rate !== "" && num(d.rate) !== num(S.dayRate))) ? "custom" : "same";
+function persist(){
+  const v = {}; VENDOR_KEYS.forEach(k => v[k] = S[k]); store.set(K("vendor"), v);
+  const d = {}; Object.keys(S).forEach(k => { if (!VENDOR_KEYS.includes(k)) d[k] = S[k]; }); store.set(K("draft"), d);
+}
+
+/* ===== Days & money =====
+   Every day between From and To is a work day. "Same rate" charges the day rate for all of them;
+   "Edit specific dates" lets any day have its own rate, overtime, or be left out. */
+const custom = () => S.rateMode === "custom";
+const isChanged = d => d.rate !== "" && d.rate != null && num(d.rate) !== num(S.dayRate);
+const rateOf = d => custom() && d.rate !== "" && d.rate != null ? num(d.rate) : num(S.dayRate);
+const extraOf = d => custom() ? num(d.extra) : 0;
+const workedDays = () => S.days.filter(d => !(custom() && d.off)).slice().sort((x,y) => x.date.localeCompare(y.date));
+const dayTotal = d => rateOf(d) + extraOf(d);
+const grandTotal = () => workedDays().reduce((s,d) => s + dayTotal(d), 0);
+const chargeText = d => extraOf(d) ? `${plain(rateOf(d))} + ${plain(extraOf(d))}` : plain(rateOf(d));
+function syncRange(){
+  const a = toDate(S.startDate), b = toDate(S.endDate || S.startDate);
+  const keep = Object.fromEntries(S.days.map(d => [d.date, d]));
+  const next = [];
+  if (a && b && b >= a){
+    const n = Math.round((b - a) / 864e5) + 1;
+    if (n > 62){ toast("Pick 62 days or fewer"); return; }
+    for (let i = 0; i < n; i++){ const t = new Date(a); t.setDate(a.getDate() + i); const k = iso(t); next.push(keep[k] || { date: k, rate: "", extra: "", off: false }); }
+  }
+  S.days = next;
+}
+function contractStart(){ if (S.startDate) return S.startDate; const w = workedDays(); return w.length ? w[0].date : ""; }
+function contractEnd(){ if (S.endDate) return S.endDate; if (S.startDate) return S.startDate; const w = workedDays(); return w.length ? w[w.length-1].date : ""; }
+function autoMonth(){ const t = parseISO(contractStart()) || parseISO(S.invoiceDate); return t ? `${MONTHS[t.m-1].slice(0,3)}’${String(t.y).slice(2)}` : ""; }
+function autoDesc(){
+  const role = (S.role || "").trim();
+  const base = role ? `For services rendered as ${role}` : "For services rendered";
+  const w = workedDays(); const s = w.length ? w[0].date : contractStart(), e = w.length ? w[w.length-1].date : contractEnd();
+  const a = parseISO(s), b = parseISO(e);
+  if (!a) return base;
+  if (!b || s === e) return `${base} on ${ord(a.d)} ${MONTHS[a.m-1]} ${a.y}`;
+  if (a.y === b.y && a.m === b.m) return `${base} from ${ord(a.d)} to ${ord(b.d)} ${MONTHS[b.m-1]} ${b.y}`;
+  if (a.y === b.y) return `${base} from ${ord(a.d)} ${MONTHS[a.m-1]} to ${ord(b.d)} ${MONTHS[b.m-1]} ${b.y}`;
+  return `${base} from ${ord(a.d)} ${MONTHS[a.m-1]} ${a.y} to ${ord(b.d)} ${MONTHS[b.m-1]} ${b.y}`;
+}
+function fileBase(){
+  const first = (S.vendorName || "Invoice").trim().split(/\s+/)[0];
+  const proj = (S.showName || "Project").trim().replace(/[^\w\- ]+/g,"").replace(/\s+/g,"_");
+  const no = String(S.invoiceNo || "").trim().replace(/[^\w-]+/g, "-").replace(/^-+|-+$/g, "");
+  return `${first}_${proj}_invoice_${no || "draft"}`;
+}
+
+/* Everything that gets printed, as plain strings. The preview, PDF and Word file all read from this. */
+function model(){
+  const total = grandTotal();
+  return {
+    project: S.showName || "", vendorName: S.vendorName || "", address: S.address || "", email: S.email || "", phone: S.phone || "",
+    billTo: (S.billTo || "").trim() || S.showName || "", contact: S.contactPerson || "",
+    invoiceNo: S.invoiceNo || "", invoiceDate: dmySlashShort(S.invoiceDate), month: S.monthAuto ? autoMonth() : (S.month || ""),
+    department: S.department || "", cstart: dmyDash(contractStart()), cend: dmyDash(contractEnd()), reverse: S.reverseCharge || "",
+    desc: autoDesc(),
+    days: workedDays().map(d => ({ date: dmyDash(d.date), charge: chargeText(d) })),
+    total: total ? inr(total) : "", words: total ? rupeesInWords(total) : "",
+    pan: S.pan || "", ifsc: S.ifsc || "", accNo: S.accNo || "", accName: S.accName || "", gstNo: S.gstNo || "", hsn: S.hsn || "", place: S.place || ""
+  };
+}
+
+/* ===== Signature =====
+   The printed signature is always one picture the same size as the original's, with the underline at the bottom.
+   A build may ship with a built-in one; anyone can upload or draw their own (kept on this device only). */
+let userSig = store.get(K("sig"), null);
+let sigCache = { key: "", src: "" };
+function sigSource(){ return userSig ? { src: userSig.src, own: true } : CONFIG.fixedSignature ? { src: CONFIG.fixedSignature.src, own: false, ready: true } : null; }
+function loadImg(src){ return new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = src; }); }
+async function composedSignature(){
+  const s = sigSource();
+  if (s && s.ready) return s.src;
+  const key = s ? s.src.length + ":" + s.src.slice(-40) : "none";
+  if (sigCache.key === key) return sigCache.src;
+  const W = 494, H = 198, c = document.createElement("canvas"); c.width = W; c.height = H;
+  const x = c.getContext("2d");
+  if (s){ const img = await loadImg(s.src); const k = Math.min((W - 40) / img.width, 150 / img.height); const w = img.width * k, h = img.height * k; x.drawImage(img, (W - w) / 2, 184 - h, w, h); }
+  x.fillStyle = "#000"; x.fillRect(0, 191, W, 3);
+  sigCache = { key, src: c.toDataURL("image/png") };
+  return sigCache.src;
+}
+function cleanSignature(img, opts = {}){
+  const maxW = 700, sc = Math.min(1, maxW / img.naturalWidth);
+  const w = Math.max(1, Math.round(img.naturalWidth * sc)), h = Math.max(1, Math.round(img.naturalHeight * sc));
+  const c = document.createElement("canvas"); c.width = w; c.height = h;
+  const x = c.getContext("2d"); x.drawImage(img, 0, 0, w, h);
+  const d = x.getImageData(0, 0, w, h), p = d.data;
+  const hist = new Uint32Array(256); let n = 0;
+  for (let i = 0; i < p.length; i += 4){ if (p[i+3] < 10) continue; hist[Math.round((p[i]+p[i+1]+p[i+2])/3)]++; n++; }
+  let acc = 0, paper = 255; for (let v = 255; v >= 0; v--){ acc += hist[v]; if (acc >= n * 0.1){ paper = v; break; } }
+  const cut = Math.max(60, paper - 45);
+  for (let i = 0; i < p.length; i += 4){
+    const l = (p[i]+p[i+1]+p[i+2])/3;
+    if (p[i+3] < 10 || l >= cut){ p[i+3] = 0; continue; }
+    p[i] = 10; p[i+1] = 12; p[i+2] = 20; p[i+3] = Math.min(255, Math.round((cut - l) / cut * 255 * 1.6));
+  }
+  if (opts.stripLine){                       // a signature taken from an invoice comes with its printed underline
+    for (let y = 0; y < h; y++){
+      let ink = 0; for (let xx = 0; xx < w; xx++) if (p[(y*w + xx)*4 + 3] > 40) ink++;
+      if (ink > w * 0.6) for (let yy = Math.max(0, y - 1); yy <= Math.min(h - 1, y + 1); yy++) for (let xx = 0; xx < w; xx++) p[(yy*w + xx)*4 + 3] = 0;
+    }
+  }
+  let minX = w, minY = h, maxX = -1, maxY = -1;
+  for (let y = 0; y < h; y++) for (let xx = 0; xx < w; xx++) if (p[(y*w + xx)*4 + 3] > 40){ if (xx < minX) minX = xx; if (xx > maxX) maxX = xx; if (y < minY) minY = y; if (y > maxY) maxY = y; }
+  if (maxX < 0) return null;
+  x.putImageData(d, 0, 0);
+  const pad = 4; minX = Math.max(0, minX - pad); minY = Math.max(0, minY - pad); maxX = Math.min(w-1, maxX + pad); maxY = Math.min(h-1, maxY + pad);
+  const o = document.createElement("canvas"); o.width = maxX - minX + 1; o.height = maxY - minY + 1;
+  o.getContext("2d").drawImage(c, minX, minY, o.width, o.height, 0, 0, o.width, o.height);
+  return { src: o.toDataURL("image/png"), w: o.width, h: o.height };
+}
+function setUserSig(sig){ userSig = sig; if (sig) store.set(K("sig"), sig); else store.del(K("sig")); renderSigBox(); refresh(); }
+function renderSigBox(){
+  const box = $("#sigBox"); const s = sigSource();
+  box.innerHTML = `
+    <div class="sigprev">${s ? `<img src="${s.src}" alt="Signature">` : `<span>No signature</span>`}</div>
+    <div class="sigbtns">
+      <label class="btn2" style="display:inline-flex;align-items:center">Upload<input type="file" accept="image/*" id="sigFile" hidden></label>
+      <button type="button" class="btn2" id="sigDrawBtn">Draw</button>
+      ${s && s.own ? `<button type="button" class="btn2" id="sigRm">${CONFIG.fixedSignature ? "Use original" : "Remove"}</button>` : ""}
+    </div>
+    <div id="sigDraw" hidden>
+      <canvas class="sigpad" id="sigPad"></canvas>
+      <div class="sigbtns">
+        <button type="button" class="btn2" id="sigPadSave">Save</button>
+        <button type="button" class="btn2" id="sigPadClear">Clear</button>
+        <button type="button" class="btn2" id="sigPadCancel">Cancel</button>
+      </div>
+    </div>`;
+  $("#sigFile").onchange = e => {
+    const f = e.target.files && e.target.files[0]; if (!f) return;
+    const r = new FileReader();
+    r.onload = () => loadImg(r.result).then(img => { const out = cleanSignature(img); if (!out){ toast("No signature found in that image"); return; } setUserSig(out); toast("Signature saved"); }).catch(() => toast("Couldn’t read that image"));
+    r.readAsDataURL(f);
+  };
+  if ($("#sigRm")) $("#sigRm").onclick = () => setUserSig(null);
+  $("#sigDrawBtn").onclick = () => { $("#sigDraw").hidden = false; setupPad(); };
+}
+function setupPad(){
+  const cv = $("#sigPad"), r = cv.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
+  cv.width = Math.round(r.width * dpr); cv.height = Math.round(r.height * dpr);
+  const x = cv.getContext("2d"); x.scale(dpr, dpr); x.lineCap = "round"; x.lineJoin = "round"; x.strokeStyle = "#111"; x.lineWidth = 2.6;
+  const wipe = () => { x.fillStyle = "#fff"; x.fillRect(0, 0, r.width, r.height); };
+  wipe();
+  let drawing = false, last = null, inked = false;
+  const pt = e => { const b = cv.getBoundingClientRect(); return { x: e.clientX - b.left, y: e.clientY - b.top }; };
+  cv.onpointerdown = e => { drawing = true; last = pt(e); cv.setPointerCapture(e.pointerId); };
+  cv.onpointermove = e => { if (!drawing) return; const q = pt(e); x.beginPath(); x.moveTo(last.x, last.y); x.lineTo(q.x, q.y); x.stroke(); last = q; inked = true; };
+  cv.onpointerup = cv.onpointercancel = () => { drawing = false; };
+  $("#sigPadClear").onclick = () => { wipe(); inked = false; };
+  $("#sigPadCancel").onclick = () => { $("#sigDraw").hidden = true; };
+  $("#sigPadSave").onclick = () => { if (!inked) return; loadImg(cv.toDataURL("image/png")).then(img => { const out = cleanSignature(img); if (out) setUserSig(out); }); };
+}
+
+/* ===== Invoice markup: every line and text position measured from the original page ===== */
+function invoiceHTML(M, sigSrc){
+  const e = esc;
+  const meta = [["Invoice Date:", M.invoiceDate, 14], ["Month of Service:", M.month, 17], ["Department:", M.department, 17, 99], ["Contract Start Date:", M.cstart, 16], ["Contract End Date:", M.cend, 17]];
+  const metaHTML = meta.map(([l, v, h, gap]) => `<div class="mrow" style="height:${h}px"><span class="t" style="left:6px;top:-1px">${l}${gap ? "" : " " + e(v)}</span>${gap ? `<span class="t" style="left:${gap}px;top:-1px">${e(v)}</span>` : ""}</div>`).join("");
+  const rows = M.days.map(d => `<tr><td>${e(d.date)}</td><td>${e(d.charge)}</td></tr>`).join("");
+  return `<div class="inv">
+  <div class="ttl">INVOICE</div>
+  <div class="bx">
+    <div class="r" style="height:33px"><span class="t lab" style="top:8px">Project Name:</span><span class="t" style="left:170px;top:8px">${e(M.project)}</span></div>
+    <div class="r" style="height:52px"><span class="t lab" style="top:17px">Name:</span><span class="t" style="left:170px;top:17px">${e(M.vendorName)}</span></div>
+    <div class="r" style="min-height:70px"><span class="t lab" style="top:17px">Address:</span><div style="margin:16px 60px 6px 170px;line-height:15px">${e(M.address)}</div></div>
+    <div class="r" style="height:29px"><div class="c L1"><span class="t" style="left:14px;top:5px">Email: ${M.email ? `<a>${e(M.email)}</a>` : ""}</span></div><div class="c R"><span class="t" style="left:5px;top:5px">Contact No: ${e(M.phone)}</span></div></div>
+    <div class="r" style="height:17px"><div class="c L1"><b class="t" style="left:50px;top:-1px">${e(M.billTo)}</b></div><div class="c R"><span class="t" style="left:6px;top:-1px">Invoice No:</span><span class="t" style="left:101px;top:-1px">${e(M.invoiceNo)}</span></div></div>
+    <div class="r" style="height:83px"><div class="c L1"><span class="t" style="left:46px;top:33px">${e(M.contact)}</span></div><div class="c R">${metaHTML}</div></div>
+    <div class="r" style="height:39px"><div class="c L1"><div style="height:19px;border-bottom:2px solid #000"></div></div><div class="c R"><span class="t" style="left:6px;top:11px">Reverse Charge Applicable: ${e(M.reverse)}</span></div></div>
+    <div class="r" style="height:36px"><div class="c L2"><span class="t" style="left:11px;top:14px">Nature of Services Rendered</span></div><div class="c R"><span class="t" style="left:0;right:0;text-align:center;top:14px">Amount (INR)</span></div></div>
+    <div class="r"><div class="c L2" style="padding:18px 0 27px"><div style="padding:0 20px 0 5px;min-height:16px">${e(M.desc)}</div>
+        <table class="dt" style="margin-top:10px"><tr class="b"><td>Date</td><td>Total Charge</td></tr>${rows}<tr class="b"><td>Total</td><td>${e(M.total)}</td></tr></table></div>
+      <div class="c R" style="display:flex;align-items:center;justify-content:center"><span style="transform:translate(4px,20px)">${e(M.total)}</span></div></div>
+    <div class="r" style="height:44px"><div class="c L2"><span class="t" style="left:10px;top:12px">Grand Total</span></div><div class="c R"><span class="t" style="left:4px;right:0;text-align:center;top:20px">${e(M.total)}</span></div></div>
+    <div class="r" style="height:50px"><span class="t" style="left:6px;top:16px">Rupees in words :</span><span class="t" style="left:168px;top:16px">${e(M.words)}</span></div>
+    <div class="r" style="height:147px"><img class="sigimg" src="${sigSrc}" alt=""><span class="t" style="left:47px;top:106px">Vendor's Signature</span><div style="position:absolute;left:422px;top:102px;width:143px;border-top:2px solid #000"></div><span class="t" style="left:425px;top:106px">Approved By</span></div>
+    <div class="r" style="height:17px"><div class="c L3"><span class="t" style="left:6px;top:-1px">PAN :</span><span class="t" style="left:152px;top:-1px">${e(M.pan)}</span></div><div class="c R"><span class="t" style="left:8px;right:0;text-align:center;top:-1px">If GST Applicable fill this :</span></div></div>
+    <div class="r" style="height:34px"><div class="c L3"><span class="t" style="left:6px;top:15px">Bank NEFT Code: ${e(M.ifsc)}</span></div><div class="c R"><span class="t" style="left:6px;top:16px">GST Reg. No: ${e(M.gstNo)}</span></div></div>
+    <div class="r" style="height:32px"><div class="c L3"><span class="t" style="left:5px;top:13px">A/c Number: ${e(M.accNo)}</span></div><div class="c R"><span class="t" style="left:6px;top:13px">HSN/ SA Code: ${e(M.hsn)}</span></div></div>
+    <div class="r" style="height:61px"><div class="c L3"><span class="t" style="left:5px;top:27px">A/c Holders Name: ${e(M.accName)}</span></div><div class="c R"><span class="t" style="left:6px;top:27px">Place of Service/Supply:${e(M.place)}</span></div></div>
+  </div>
+</div>`;
+}
+
+/* ===== Word file: the original document, filled in ===== */
+const WNS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
+const XMLNS = "http://www.w3.org/XML/1998/namespace";
+const els = (el, name) => Array.from(el.getElementsByTagNameNS(WNS, name));
+const kids = (el, name) => Array.from(el.childNodes).filter(n => n.nodeType === 1 && n.namespaceURI === WNS && n.localName === name);
+const textOf = el => els(el, "t").map(t => t.textContent).join("");
+function setRunText(r, text){
+  const ts = kids(r, "t"); let t = ts[0];
+  if (!t){ t = r.ownerDocument.createElementNS(WNS, "w:t"); r.appendChild(t); }
+  ts.slice(1).forEach(x => x.remove());
+  t.textContent = text; t.setAttributeNS(XMLNS, "xml:space", "preserve");
+}
+/* keep the label (text up to the first ":") and any spacing after it; the value replaces the rest */
+function plainRun(r){ kids(r, "rPr").forEach(p => kids(p, "spacing").filter(x => parseInt(x.getAttributeNS(WNS, "val") || x.getAttribute("w:val"), 10) > 0).forEach(x => x.remove())); return r; }
+function fillPara(p, value, keepLabel){
+  // a value that sits inside a link (the email) goes into the link's own text
+  const link = keepLabel && els(p, "hyperlink")[0];
+  if (link){
+    const lr = els(link, "r").filter(r => kids(r, "t").length);
+    if (lr.length){ setRunText(lr[0], value); lr.slice(1).forEach(r => r.remove()); return; }
+  }
+  const runs = els(p, "r").filter(r => kids(r, "t").length);
+  const full = runs.map(textOf).join("");
+  const labelLen = keepLabel ? full.indexOf(":") + 1 : 0;
+  let acc = 0, placed = false, lastKept = null;
+  for (const r of runs){
+    const t = textOf(r);
+    if (t.length && acc + t.length <= labelLen){ acc += t.length; lastKept = r; continue; }
+    if (acc < labelLen){                       // one run holds both label and value: split it
+      const cut = labelLen - acc; acc += t.length;
+      const rest = t.slice(cut); setRunText(r, t.slice(0, cut));
+      const nr = plainRun(r.cloneNode(true)); els(nr, "b").forEach(b => b.remove());
+      setRunText(nr, (rest.match(/^\s*/) || [""])[0] + value); r.parentNode.insertBefore(nr, r.nextSibling); placed = true; continue;
+    }
+    acc += t.length;
+    if (placed){ r.remove(); continue; }
+    if (keepLabel && t.length && !t.trim()){ lastKept = r; continue; }   // the gap between label and value
+    plainRun(r); setRunText(r, value); placed = true;
+  }
+  if (!placed && runs.length){
+    const base = lastKept || runs[runs.length - 1]; const nr = plainRun(base.cloneNode(true));
+    els(nr, "b").forEach(b => b.remove()); kids(nr, "tab").forEach(x => x.remove());
+    setRunText(nr, (keepLabel && !/\s$/.test(full) ? " " : "") + value); base.parentNode.insertBefore(nr, base.nextSibling);
+  }
+}
+const cellsOf = tr => kids(tr, "tc");
+const textParas = tc => els(tc, "p").filter(p => els(p, "t").length);
+function fillCell(tc, value, keepLabel){
+  const ps = textParas(tc);
+  const p = keepLabel ? ps.find(p => textOf(p).includes(":")) : ps[ps.length - 1];
+  if (p) fillPara(p, value, keepLabel);
+}
+async function buildDocx(M, sigPngB64, templateB64 = TEMPLATE_B64){
+  const zip = await JSZip.loadAsync(templateB64, { base64: true });
+  const doc = new DOMParser().parseFromString(await zip.file("word/document.xml").async("string"), "application/xml");
+  const tbl = kids(els(doc, "body")[0], "tbl")[0];
+  let rows = kids(tbl, "tr");
+  const L = (ri, ci, v) => fillCell(cellsOf(rows[ri])[ci], v, true);
+  const V = (ri, ci, v) => fillCell(cellsOf(rows[ri])[ci], v, false);
+  els(rows[0], "t").forEach(t => { if (t.textContent === "Show") t.textContent = "Project"; });
+  L(0,0,M.project); L(1,0,M.vendorName); L(2,0,M.address);
+  L(3,0,M.email); L(3,1,M.phone);
+  V(4,0,M.billTo); L(4,1,M.invoiceNo);
+  V(5,0,M.contact); L(5,1,M.invoiceDate);
+  L(6,1,M.month); L(7,1,M.department); L(8,1,M.cstart); L(9,1,M.cend); L(10,1,M.reverse);
+  V(13,0,M.desc); V(13,1,M.total);
+  // day rows sit between the "Date | Total Charge" header (row 14) and the "Total" row
+  const isTotal = r => textOf(cellsOf(r)[0]).trim() === "Total";
+  let T = rows.findIndex((r, i) => i > 14 && isTotal(r));
+  const proto = rows[15], old = rows.slice(15, T);
+  M.days.forEach(d => { const nr = proto.cloneNode(true); fillCell(cellsOf(nr)[0], d.date, false); fillCell(cellsOf(nr)[1], d.charge, false); tbl.insertBefore(nr, rows[T]); });
+  old.forEach(r => r.remove());
+  rows = kids(tbl, "tr"); T = rows.findIndex((r, i) => i > 14 && isTotal(r));
+  V(T,1,M.total); V(T+2,1,M.total); L(T+3,0,M.words);
+  L(T+5,0,M.pan); L(T+6,0,M.ifsc); L(T+6,1,M.gstNo); L(T+7,0,M.accNo); L(T+7,1,M.hsn); L(T+8,0,M.accName); L(T+8,1,M.place);
+  zip.file("word/document.xml", new XMLSerializer().serializeToString(doc));
+  const relsPath = "word/_rels/document.xml.rels";
+  zip.file(relsPath, (await zip.file(relsPath).async("string")).replace(/Target="mailto:[^"]*"/g, `Target="mailto:${esc(M.email)}"`));
+  if (sigPngB64) zip.file("word/media/image1.png", sigPngB64, { base64: true });
+  const core = await zip.file("docProps/core.xml").async("string");
+  zip.file("docProps/core.xml", core.replace(/<dc:creator>[^<]*<\/dc:creator>/, `<dc:creator>${esc(M.vendorName)}</dc:creator>`).replace(/<cp:lastModifiedBy>[^<]*<\/cp:lastModifiedBy>/, `<cp:lastModifiedBy>${esc(M.vendorName)}</cp:lastModifiedBy>`));
+  return zip;
+}
+
+/* ===== Fill "My details" from an old invoice (Word or PDF), read on this device ===== */
+const PDFJS = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/";
+function loadScript(src){ return new Promise((res, rej) => { const t = document.createElement("script"); t.src = src; t.onload = res; t.onerror = rej; document.head.appendChild(t); }); }
+async function readDocxInvoice(file){
+  const zip = await JSZip.loadAsync(file);
+  const doc = new DOMParser().parseFromString(await zip.file("word/document.xml").async("string"), "application/xml");
+  const cellText = el => els(el, "p").map(p => Array.from(p.getElementsByTagNameNS(WNS, "*")).map(n => n.localName === "t" ? n.textContent : n.localName === "tab" ? " " : "").join("")).join(" ").replace(/\s+/g, " ").trim();
+  const rows = els(doc, "tr").map(tr => kids(tr, "tc").map(cellText));
+  const segs = rows.flat().concat(els(doc, "body")[0] ? kids(els(doc, "body")[0], "p").map(cellText) : []).filter(Boolean);
+  // the signature is the picture in the document; take the biggest one
+  let image = null, best = 0;
+  for (const name of Object.keys(zip.files)) if (/^word\/media\/.+\.(png|jpe?g)$/i.test(name)){
+    const b = await zip.file(name).async("base64"); if (b.length > best){ best = b.length; image = `data:image/${/png$/i.test(name) ? "png" : "jpeg"};base64,${b}`; }
+  }
+  return { segs, rows, image };
+}
+async function readPdfInvoice(file){
+  if (!window.pdfjsLib){ await loadScript(PDFJS + "pdf.min.js"); window.pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS + "pdf.worker.min.js"; }
+  const pdf = await window.pdfjsLib.getDocument({ data: new Uint8Array(await file.arrayBuffer()) }).promise;
+  const meta = await pdf.getMetadata().catch(() => null);
+  const kw = meta && meta.info && meta.info.Keywords || "";
+  if (kw.startsWith("invoicinator:")){                     // a PDF made by this tool carries its details
+    try { return { direct: JSON.parse(decodeURIComponent(escape(atob(kw.slice(13))))) }; } catch(e){}
+  }
+  const segs = [], rows = [];
+  for (let n = 1; n <= pdf.numPages; n++){
+    const items = (await (await pdf.getPage(n)).getTextContent()).items.filter(i => i.str && i.str.trim());
+    const lines = [];
+    items.forEach(i => { const y = i.transform[5]; let line = lines.find(l => Math.abs(l.y - y) < 3); if (!line){ line = { y, items: [] }; lines.push(line); } line.items.push(i); });
+    lines.sort((a, b) => b.y - a.y).forEach(l => {
+      l.items.sort((a, b) => a.transform[4] - b.transform[4]);
+      const cells = []; let cur = null, end = -1e9;
+      l.items.forEach(i => { const x = i.transform[4]; if (!cur || x - end > 14){ cur = { x, t: "" }; cells.push(cur); } else if (x - end > 1.5) cur.t += " "; cur.t += i.str; end = x + i.width; });
+      const row = cells.map(c => c.t.replace(/\s+/g, " ").trim()).filter(Boolean);
+      rows.push(row); segs.push(...row);
+    });
+  }
+  return { segs, rows, image: null };
+}
+function parseInvoice({ segs, rows }){
+  // in PDFs a label and its value often come out as neighbouring pieces ("Name:" | "A Person"): join them
+  const joined = [];
+  rows.forEach(r => r.forEach((c, i) => { if (/:\s*$/.test(c) && r[i+1] && !/:\s*$/.test(r[i+1])) joined.push(c + " " + r[i+1]); }));
+  segs = joined.concat(segs);
+  const f = {}, all = segs.join("\n");
+  const after = (re) => { for (const s of segs){ const m = s.match(re); if (m && m[1] && m[1].trim()) return m[1].trim(); } return ""; };
+  f.vendorName = after(/^name\s*:\s*(.+)$/i);
+  f.address = after(/^address\s*:\s*(.+)$/i);
+  if (f.address && !/\d{6}/.test(f.address)){            // a PDF may wrap the address onto the next line
+    const ri = rows.findIndex(r => r.some(c => /^address\s*:/i.test(c)));
+    for (let k = ri + 1; ri >= 0 && k < Math.min(rows.length, ri + 3); k++){
+      const t = rows[k].join(" ");
+      if (/^(email|contact|name|pan)\b/i.test(t) || /^[A-Za-z .\/]+:\s/.test(rows[k][0] || "")) break;
+      f.address += " " + t; if (/\d{6}/.test(t)) break;
+    }
+  }
+  f.email = (all.match(/[\w.+-]+@[\w-]+(\.[\w-]+)+/) || [""])[0];
+  f.phone = after(/contact\s*(?:no|number)?\.?\s*:\s*(\+?[\d][\d\s-]{6,})/i).replace(/\s+/g, "");
+  f.pan = after(/^pan\s*:?\s*([A-Z]{5}\d{4}[A-Z])/i) || (all.match(/\b[A-Z]{5}\d{4}[A-Z]\b/) || [""])[0];
+  f.gstNo = after(/gst[^:]*no\.?\s*:\s*([0-9A-Z]{15})/i) || (all.match(/\b\d{2}[A-Z]{5}\d{4}[A-Z][0-9A-Z]Z[0-9A-Z]\b/) || [""])[0];
+  f.hsn = after(/(?:hsn|sac)[^:]*:\s*(\d{4,8})/i);
+  f.ifsc = after(/(?:neft|ifsc)[^:]*:\s*([A-Z]{4}0[A-Z0-9]{6})/i) || (all.match(/\b[A-Z]{4}0[A-Z0-9]{6}\b/) || [""])[0];
+  f.accNo = after(/a\/?c\s*(?:number|no)\.?\s*:\s*(\d[\d\s]{5,})/i).replace(/\s+/g, "");
+  f.accName = after(/holders?'?\s*name\s*:\s*(.+)$/i);
+  f.place = after(/place of [^:]*:\s*(.+)$/i);
+  f.department = after(/^department\s*:\s*(.+)$/i);
+  f.role = (all.match(/rendered as\s+(.+?)\s+(?:from|on)\s/i) || ["", ""])[1].trim();
+  // day rate: the most common charge in the day rows
+  const counts = {};
+  rows.forEach(r => { if (/^\d{1,2}[-\/.]\d{1,2}[-\/.]\d{2,4}$/.test(r[0] || "") && r[1]){ const v = (r[1].match(/\d[\d,]*/) || [""])[0].replace(/,/g, ""); if (v) counts[v] = (counts[v] || 0) + 1; } });
+  f.dayRate = Object.keys(counts).sort((a, b) => counts[b] - counts[a])[0] || "";
+  const no = after(/invoice\s*no\.?\s*:\s*(\S+)/i);
+  if (no) f.invoiceNo = bumpNo(no);
+  Object.keys(f).forEach(k => { if (!f[k]) delete f[k]; });
+  return f;
+}
+const IMPORT_LABELS = { vendorName: "Name", address: "Address", email: "Email", phone: "Contact no.", pan: "PAN", gstNo: "GST reg. no.", hsn: "HSN / SAC",
+  place: "Place of supply", ifsc: "IFSC", accNo: "Account no.", accName: "Account holder", department: "Department", role: "Role", dayRate: "Day rate", invoiceNo: "Next invoice no." };
+let importFound = null;
+async function importInvoice(file){
+  const box = $("#importReview"); box.hidden = false; box.innerHTML = `<div class="review">Reading ${esc(file.name)}…</div>`;
+  try {
+    const isPdf = /\.pdf$/i.test(file.name) || file.type === "application/pdf";
+    const raw = isPdf ? await readPdfInvoice(file) : await readDocxInvoice(file);
+    const found = raw.direct ? Object.fromEntries(Object.entries(raw.direct).filter(([k, v]) => IMPORT_LABELS[k] && v)) : parseInvoice(raw);
+    if (raw.direct && raw.direct.invoiceNo) found.invoiceNo = bumpNo(raw.direct.invoiceNo);
+    let sig = null;
+    if (raw.image){ try { sig = cleanSignature(await loadImg(raw.image), { stripLine: true }); } catch(e){} }
+    if (!Object.keys(found).length && !sig){ box.innerHTML = `<div class="review">Couldn’t find any details in that file.${isPdf ? " If it’s a scan, try the Word version." : ""} <button type="button" class="link" id="rvCancel">Close</button></div>`; $("#rvCancel").onclick = closeImport; return; }
+    importFound = { fields: found, sig };
+    box.innerHTML = `<div class="review"><h3>Found in ${esc(file.name)}</h3>
+      ${Object.entries(found).map(([k, v]) => `<label class="rv"><input type="checkbox" data-f="${k}" checked><span>${IMPORT_LABELS[k]}</span><em>${esc(v)}</em></label>`).join("")}
+      ${sig ? `<label class="rv"><input type="checkbox" data-f="__sig" checked><span>Signature</span><em><img src="${sig.src}" alt="Signature"></em></label>` : ""}
+      <div class="sigbtns"><button type="button" class="btn2 primary" id="rvUse">Use these</button><button type="button" class="btn2" id="rvCancel">Cancel</button></div></div>`;
+    $("#rvCancel").onclick = closeImport;
+    $("#rvUse").onclick = () => {
+      $$("#importReview [data-f]:checked").forEach(cb => { const k = cb.dataset.f; if (k === "__sig") setUserSig(importFound.sig); else S[k] = importFound.fields[k]; });
+      if (S.rateMode !== "custom") S.days.forEach(d => { d.rate = ""; });
+      closeImport(); renderDays(); refresh(); toast("Details filled in");
+    };
+  } catch(err){ console.error(err); box.innerHTML = `<div class="review">Couldn’t read that file. <button type="button" class="link" id="rvCancel">Close</button></div>`; $("#rvCancel").onclick = closeImport; }
+}
+function closeImport(){ importFound = null; $("#importReview").hidden = true; $("#importReview").innerHTML = ""; $("#importFile").value = ""; }
+$("#importFile").onchange = e => { const f = e.target.files && e.target.files[0]; if (f) importInvoice(f); };
+
+/* ===== Rendering ===== */
+const ICON = {
+  x: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>`,
+  bin: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16"/><path d="M10 11v6M14 11v6"/><path d="M6 7l1 13h10l1-13"/><path d="M9 7V4h6v3"/></svg>`
+};
+function renderDays(){
+  const list = $("#dayList");
+  $$(".mode button").forEach(b => b.setAttribute("aria-pressed", b.dataset.mode === S.rateMode));
+  if (!custom()){ list.innerHTML = ""; return; }
+  if (!S.days.length){ list.innerHTML = `<div class="daylist"><div class="empty">Pick From and To dates</div></div>`; return; }
+  // every date in the range has a row; clearing its rate means that day is not billed
+  list.innerHTML = `<div class="daylist"><div class="dayhead"><span>Date</span><span>Rate</span><span>Overtime</span></div>` +
+    S.days.map(d => `<div class="dr ${d.off ? "off" : ""} ${isChanged(d) && !d.off ? "changed" : ""}" data-date="${d.date}">
+      <span class="dd">${esc(dayLabel(d.date))}<small>${d.off ? "Off" : esc(weekday(d.date))}</small></span>
+      <div class="money"><span>₹</span><input class="rate" inputmode="decimal" value="${d.off ? "" : esc(d.rate !== "" ? d.rate : S.dayRate)}" placeholder="Off" aria-label="Rate on ${esc(nice(d.date))}"></div>
+      <div class="money"><span>+</span><input class="extra" inputmode="decimal" value="${esc(d.extra)}" placeholder="0" aria-label="Overtime on ${esc(nice(d.date))}"></div>
+    </div>`).join("") + `</div><p class="help">Clear a rate to skip that day.</p>`;
+}
+function syncInputs(){
+  $$("[data-k]").forEach(el => {
+    const k = el.dataset.k; let v = S[k] ?? "";
+    if (k === "month" && S.monthAuto) v = autoMonth();
+    if (document.activeElement !== el && el.value !== v) el.value = v;
+  });
+  $$("[data-auto]").forEach(b => { b.classList.toggle("on", S.monthAuto); b.textContent = S.monthAuto ? "Auto" : "Use auto"; });
+}
+function missing(){
+  const m = [];
+  if (!S.vendorName) m.push("name"); if (!S.address) m.push("address"); if (!S.pan) m.push("PAN"); if (!S.gstNo) m.push("GST no.");
+  if (!S.ifsc || !S.accNo) m.push("bank details"); if (!sigSource()) m.push("signature");
+  return m;
+}
+/* A long invoice continues on another A4 page, breaking only between rows (like the Word file does). */
+const PAGE_BOTTOM = 1104, NEXT_TOP = 66;
+function paginate(html){
+  const host = $("#measureHost"); host.innerHTML = html;
+  const inv = host.firstElementChild, top = inv.getBoundingClientRect().top;
+  const end = Math.ceil(inv.querySelector(".bx").getBoundingClientRect().bottom - top);
+  const cuts = Array.from(inv.querySelectorAll(".bx > .r, table.dt tr")).map(el => Math.round(el.getBoundingClientRect().bottom - top)).sort((a, b) => a - b);
+  host.innerHTML = "";
+  const pages = []; let start = 0, winTop = 0;
+  for (let guard = 0; guard < 10; guard++){
+    const room = PAGE_BOTTOM - winTop;
+    if (end - start <= room){ pages.push({ winTop, winH: 1123 - winTop, shift: start }); break; }
+    const cut = cuts.filter(c => c > start + 60 && c + 2 <= start + room).pop() || (start + room - 2);
+    pages.push({ winTop, winH: cut + 2 - start, shift: start });
+    start = cut; winTop = NEXT_TOP;
+  }
+  return pages;
+}
+function pagesHTML(html){
+  return paginate(html).map(p => `<div class="page"><div class="win" style="top:${p.winTop}px;height:${p.winH}px"><div class="shift" style="top:${-p.shift}px">${html}</div></div></div>`).join("");
+}
+let previewTimer = null, previewSeq = 0;
+function renderPreview(){
+  clearTimeout(previewTimer);
+  previewTimer = setTimeout(async () => {
+    const seq = ++previewSeq; const sig = await composedSignature(); if (seq !== previewSeq) return;
+    const html = pagesHTML(invoiceHTML(model(), sig));
+    $$(".paper").forEach(p => p.innerHTML = html); fitPreviews();
+  }, 60);
+}
+function fitPreviews(){
+  $$(".paperwrap").forEach(wrap => {
+    if (!wrap.offsetWidth) return;
+    const sc = wrap.querySelector(".paperscale");
+    const pane = wrap.closest(".previewpane");
+    let k = Math.min(1, (wrap.clientWidth - 32) / 794);
+    if (pane) k = Math.min(k, (window.innerHeight - 190 - 34) / 1123);   // desktop: whole page in view
+    const n = Math.max(1, sc.querySelectorAll(".page").length);
+    sc.querySelector(".paper").style.transform = `scale(${k})`; sc.style.width = (794 * k) + "px"; sc.style.height = ((1123 * n + 16 * (n - 1)) * k) + "px";
+  });
+}
+function renderView(){
+  ["invoice","history","profile"].forEach(v => { $("#view-" + v).hidden = v !== view; });
+  $$(".nav button").forEach(b => b.setAttribute("aria-current", b.dataset.view === view));
+  const m = missing();
+  $("#profileDot").hidden = !m.length;
+  $("#setupBanner").hidden = !m.length; $("#setupText").textContent = m.length ? `Missing ${m.join(", ")}` : "";
+  $("#sum").innerHTML = `${esc(S.showName || "Untitled")} · #${esc(S.invoiceNo || "–")}<b>₹${inr(grandTotal())}</b>`;
+}
+function refresh(){
+  const total = grandTotal(), wd = workedDays(), ot = wd.reduce((s,d) => s + extraOf(d), 0);
+  $("#gt").textContent = "₹" + inr(total);
+  $("#gw").textContent = total ? rupeesInWords(total) : "";
+  $("#gdays").textContent = `${wd.length} day${wd.length === 1 ? "" : "s"}` + (custom() || !wd.length ? "" : ` × ₹${inr(num(S.dayRate))}`) + (ot ? ` · ₹${inr(ot)} overtime` : "");
+  syncInputs(); renderView(); renderPreview(); persist();
+}
+
+/* ===== Events ===== */
+function goView(v){ view = v; if (v === "history") renderHistory(); refresh(); window.scrollTo({ top: 0 }); }
+document.addEventListener("click", e => {
+  const g = e.target.closest("[data-goto]"); if (g){ e.preventDefault(); goView(g.dataset.goto); return; }
+  const nv = e.target.closest(".nav [data-view]"); if (nv){ goView(nv.dataset.view); return; }
+  const md = e.target.closest(".mode [data-mode]"); if (md){ S.rateMode = md.dataset.mode; renderDays(); refresh(); return; }
+  const au = e.target.closest("[data-auto]"); if (au){ e.preventDefault(); S.monthAuto = true; S.month = ""; refresh(); return; }
+
+});
+document.addEventListener("input", e => {
+  const el = e.target;
+  if (el.dataset.k){
+    const k = el.dataset.k;
+    if (k === "startDate" || k === "endDate") return;
+    if (k === "month"){ S.monthAuto = false; S.month = el.value; }
+    else S[k] = el.value;
+    if (k === "dayRate"){ S.days.forEach(d => { if (num(d.rate) === num(S.dayRate)) d.rate = ""; }); renderDays(); }
+    refresh(); return;
+  }
+  const row = el.closest("#dayList [data-date]");
+  if (row){
+    const d = S.days.find(x => x.date === row.dataset.date); if (!d) return;
+    if (el.classList.contains("rate")){
+      d.off = !num(el.value);
+      d.rate = d.off || num(el.value) === num(S.dayRate) ? "" : el.value;
+      row.querySelector(".dd small").textContent = d.off ? "Off" : weekday(d.date);
+    }
+    if (el.classList.contains("extra")) d.extra = el.value;
+    row.classList.toggle("off", d.off); row.classList.toggle("changed", isChanged(d) && !d.off); refresh();
+  }
+});
+document.addEventListener("change", e => {
+  const k = e.target.dataset.k;
+  if (k === "startDate" || k === "endDate"){
+    S[k] = e.target.value;
+    if (S.startDate && S.endDate && S.endDate < S.startDate){ if (k === "startDate") S.endDate = S.startDate; else S.startDate = S.endDate; }
+    syncRange(); renderDays(); refresh(); return;
+  }
+  if (k && e.target.tagName === "SELECT"){ S[k] = e.target.value; refresh(); }
+});
+$("#pvBtn").onclick = () => { $("#sheet").hidden = false; document.body.style.overflow = "hidden"; fitPreviews(); };
+$("#sheetClose").onclick = () => { $("#sheet").hidden = true; document.body.style.overflow = ""; };
+let tt; function toast(msg, actionLabel, action){
+  const t = $("#toast"); t.textContent = msg;
+  if (actionLabel){ const b = document.createElement("button"); b.type = "button"; b.textContent = actionLabel; b.onclick = () => { action(); t.classList.remove("show"); }; t.append(" ", b); }
+  t.classList.toggle("act", !!actionLabel); t.classList.add("show"); clearTimeout(tt); tt = setTimeout(()=>t.classList.remove("show"), actionLabel ? 5000 : 2400);
+}
+window.addEventListener("resize", fitPreviews);
+
+/* ===== History ===== */
+function snapshot(){ const d = {}; Object.keys(S).forEach(k => { if (!VENDOR_KEYS.includes(k) || CARRY_KEYS.includes(k)) d[k] = JSON.parse(JSON.stringify(S[k])); }); return d; }
+function saveToHistory(){
+  const entry = { id: `${S.invoiceNo}|${S.showName}`, savedAt: Date.now(), total: grandTotal(), data: snapshot() };
+  history = history.filter(h => h.id !== entry.id); history.unshift(entry); history = history.slice(0, 80);
+  store.set(K("history"), history);
+}
+function renderHistory(){
+  const list = $("#histList");
+  if (!history.length){ list.innerHTML = `<div class="empty">None yet</div>`; return; }
+  list.innerHTML = history.map((h,i) => `<div class="hitem">
+      <div class="meta"><b>#${esc(h.data.invoiceNo)} · ${esc(h.data.showName || "Untitled")}</b><span>₹${inr(h.total)} · ${new Date(h.savedAt).toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"numeric"})}</span></div>
+      <button type="button" class="btn2" data-open="${i}">Open</button>
+      <button type="button" class="del" data-rm="${i}" aria-label="Delete">${ICON.x}</button></div>`).join("");
+}
+$("#histList").addEventListener("click", e => {
+  const o = e.target.closest("[data-open]"), r = e.target.closest("[data-rm]");
+  if (o){ const data = JSON.parse(JSON.stringify(history[+o.dataset.open].data)); Object.assign(S, freshInvoice(), data); S.days = normaliseDays(S.days, S.dayRate); if (!["same","custom"].includes(S.rateMode)) S.rateMode = "same"; view = "invoice"; renderDays(); refresh(); window.scrollTo(0,0); }
+  if (r){ history.splice(+r.dataset.rm, 1); store.set(K("history"), history); renderHistory(); refresh(); }
+});
+function bumpNo(no){
+  const m = String(no || "").match(/^(.*?)(\d+)(\D*)$/);
+  if (!m) return no ? no + "-2" : CONFIG.firstInvoiceNo;
+  const n = String(parseInt(m[2], 10) + 1).padStart(m[2].length, "0");
+  return m[1] + n + m[3];
+}
+function nextInvoiceNo(){
+  // count up from the invoice just finished, keeping its format (7 -> 8, SCP/26/09 -> SCP/26/10)
+  const last = S.invoiceNo || (history[0] && history[0].data.invoiceNo);
+  return last ? bumpNo(last) : CONFIG.firstInvoiceNo;
+}
+function newInvoice(){
+  if (S.showName || S.days.length) saveToHistory();
+  Object.assign(S, freshInvoice(), { invoiceNo: nextInvoiceNo() });
+  view = "invoice"; renderDays(); refresh(); toast(`Invoice #${S.invoiceNo}`); window.scrollTo(0,0);
+}
+$("#newInvBtn").onclick = newInvoice; $("#newInvBtn2").onclick = newInvoice;
+$("#resetMe").onclick = () => { Object.assign(S, VENDOR_DEFAULTS); renderDays(); refresh(); };
+
+/* ===== Downloads ===== */
+function saveBlob(blob, name){ const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000); }
+async function busy(btn, fn){ btn.disabled = true; const old = btn.textContent; btn.textContent = "…"; try { await fn(); } catch(err){ console.error(err); toast("Something went wrong. Try again."); } finally { btn.disabled = false; btn.textContent = old; } }
+async function renderPdfPages(){
+  if (document.fonts && document.fonts.ready) await document.fonts.ready;
+  const host = $("#exportHost"); host.innerHTML = pagesHTML(invoiceHTML(model(), await composedSignature()));
+  try {
+    await Promise.all(Array.from(host.querySelectorAll("img")).map(i => i.complete ? 0 : new Promise(r => { i.onload = i.onerror = r; })));
+    const out = [];
+    for (const pg of host.querySelectorAll(".page"))
+      out.push(await html2canvas(pg, { scale: 2.5, backgroundColor: "#ffffff", logging: false, width: 794, height: 1123, windowWidth: 794, windowHeight: 1123, scrollX: 0, scrollY: 0 }));
+    return out;
+  } finally { host.innerHTML = ""; }
+}
+async function downloadPDF(){
+  if (!window.html2canvas || !window.jspdf){ toast("Couldn’t load. Check your connection."); return; }
+  await busy($("#dlPdf"), async () => {
+    const canvases = await renderPdfPages();
+    const pdf = new window.jspdf.jsPDF({ unit: "mm", format: "a4", orientation: "portrait", compress: true });
+    const carry = {}; [...VENDOR_KEYS, "invoiceNo"].forEach(k => { if (S[k]) carry[k] = S[k]; });
+    pdf.setProperties({ title: fileBase(), author: S.vendorName || "", keywords: "invoicinator:" + btoa(unescape(encodeURIComponent(JSON.stringify(carry)))) });
+    canvases.forEach((c, i) => { if (i) pdf.addPage(); pdf.addImage(c.toDataURL("image/jpeg", 0.95), "JPEG", 0, 0, 210, 297); });
+    pdf.save(fileBase() + ".pdf");
+    saveToHistory(); toast("PDF downloaded");
+  });
+}
+async function downloadDOCX(){
+  if (!window.JSZip){ toast("Couldn’t load. Check your connection."); return; }
+  await busy($("#dlWord"), async () => {
+    const zip = await buildDocx(model(), (await composedSignature()).split(",")[1]);
+    saveBlob(await zip.generateAsync({ type: "blob", compression: "DEFLATE", mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" }), fileBase() + ".docx");
+    saveToHistory(); toast("Word file downloaded");
+  });
+}
+$("#dlPdf").onclick = downloadPDF;
+$("#dlWord").onclick = downloadDOCX;
+
+/* ===== Boot ===== */
+if (!S.vendorName) view = "profile";
+renderSigBox(); renderDays(); renderHistory(); refresh();
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(renderPreview);
+</script>
+</body>
+</html>
